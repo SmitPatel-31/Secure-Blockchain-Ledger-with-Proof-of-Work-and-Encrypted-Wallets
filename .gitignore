@@ -1,0 +1,15 @@
+# Build artifacts
+build/
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+
+# Compiled objects
+*.o
+*.obj
+*.exe
+*.pdb
+
+# Misc
+*.log
+.DS_Store
