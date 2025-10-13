@@ -2,27 +2,30 @@
 #include <stdexcept>
 
 #include "crypto_utils.h"
+#include "wallet.h"
 
 int main() {
     std::cout << "Secure Blockchain — WIP" << std::endl;
 
-    std::string publicKey;
-    std::string privateKey;
-    if (!generateKeyPair(publicKey, privateKey)) {
-        std::cerr << "Key generation failed" << std::endl;
-        return 1;
-    }
+    const std::string password = "smit123";
+    const std::string walletPath = "data/wallets/demo.wallet";
+    const std::string payload = "wallet-check";
 
-    const std::string message = "hello";
     try {
-        const std::string signature = signData(message, privateKey);
-        const bool verified = verifySignature(message, signature, publicKey);
-        const bool tamperedVerified = verifySignature("hallo", signature, publicKey);
+        Wallet wallet = Wallet::Create(password);
+        if (!wallet.Save(walletPath)) {
+            std::cerr << "Failed to save wallet to " << walletPath << std::endl;
+            return 1;
+        }
 
-        std::cout << "Sign/verify: " << (verified ? "OK" : "FAIL")
-                  << "; Tamper check: " << (!tamperedVerified ? "PASSED" : "FAILED") << std::endl;
+        Wallet loaded = Wallet::Load(walletPath, password);
+        const std::string signature = loaded.sign(payload, password);
+        const bool verified = verifySignature(payload, signature, loaded.publicKey());
+
+        std::cout << "Wallet created and saved to: " << walletPath << std::endl;
+        std::cout << "Signature verification: " << (verified ? "OK" : "FAIL") << std::endl;
     } catch (const std::exception& ex) {
-        std::cerr << "Signing or verification error: " << ex.what() << std::endl;
+        std::cerr << "Wallet test failed: " << ex.what() << std::endl;
         return 1;
     }
 
