@@ -11,6 +11,7 @@ find_package(OpenSSL REQUIRED)
 add_executable(secure-blockchain
     src/main.cpp
     src/crypto_utils.cpp
+    src/wallet.cpp
 )
 
 target_include_directories(secure-blockchain PRIVATE src)
