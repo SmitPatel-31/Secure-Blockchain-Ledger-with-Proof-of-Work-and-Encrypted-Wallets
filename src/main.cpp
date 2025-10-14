@@ -2,7 +2,9 @@
 #include <stdexcept>
 
 #include "crypto_utils.h"
+
 #include "transaction.h"
+
 
 namespace {
 
