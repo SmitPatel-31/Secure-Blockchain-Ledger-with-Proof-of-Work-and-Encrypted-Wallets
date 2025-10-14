@@ -2,27 +2,44 @@
 #include <stdexcept>
 
 #include "crypto_utils.h"
+#include "transaction.h"
 
-int main() {
-    std::cout << "Secure Blockchain — WIP" << std::endl;
+namespace {
 
+struct EphemeralWallet {
     std::string publicKey;
     std::string privateKey;
-    if (!generateKeyPair(publicKey, privateKey)) {
-        std::cerr << "Key generation failed" << std::endl;
-        return 1;
+};
+
+EphemeralWallet createWallet() {
+    EphemeralWallet wallet;
+    if (!generateKeyPair(wallet.publicKey, wallet.privateKey)) {
+        throw std::runtime_error("Key generation failed");
     }
+    
+    return wallet;
+}
 
-    const std::string message = "hello";
+}  // namespace
+
+int main() {
     try {
-        const std::string signature = signData(message, privateKey);
-        const bool verified = verifySignature(message, signature, publicKey);
-        const bool tamperedVerified = verifySignature("hallo", signature, publicKey);
+        const EphemeralWallet sender = createWallet();
+        const EphemeralWallet receiver = createWallet();
 
-        std::cout << "Sign/verify: " << (verified ? "OK" : "FAIL")
-                  << "; Tamper check: " << (!tamperedVerified ? "PASSED" : "FAILED") << std::endl;
+        Transaction tx{};
+        tx.senderPub = sender.publicKey;
+        tx.receiverPub = receiver.publicKey;
+        tx.amount = 42.5;
+        tx.signature = signData(tx.digest(), sender.privateKey);
+
+        std::cout << "TX verify (valid): " << (tx.verify() ? "OK" : "REJECTED") << std::endl;
+
+        Transaction tampered = tx;
+        tampered.amount += 10.0;
+        std::cout << "TX verify (tampered): " << (tampered.verify() ? "OK" : "REJECTED") << std::endl;
     } catch (const std::exception& ex) {
-        std::cerr << "Signing or verification error: " << ex.what() << std::endl;
+        std::cerr << "Transaction test failed: " << ex.what() << std::endl;
         return 1;
     }
 
