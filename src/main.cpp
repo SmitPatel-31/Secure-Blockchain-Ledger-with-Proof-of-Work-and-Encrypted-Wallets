@@ -2,30 +2,46 @@
 #include <stdexcept>
 
 #include "crypto_utils.h"
-#include "wallet.h"
+
+#include "transaction.h"
+
+
+namespace {
+
+struct EphemeralWallet {
+    std::string publicKey;
+    std::string privateKey;
+};
+
+EphemeralWallet createWallet() {
+    EphemeralWallet wallet;
+    if (!generateKeyPair(wallet.publicKey, wallet.privateKey)) {
+        throw std::runtime_error("Key generation failed");
+    }
+    
+    return wallet;
+}
+
+}  // namespace
 
 int main() {
-    std::cout << "Secure Blockchain — WIP" << std::endl;
-
-    const std::string password = "smit123";
-    const std::string walletPath = "data/wallets/demo.wallet";
-    const std::string payload = "wallet-check";
-
     try {
-        Wallet wallet = Wallet::Create(password);
-        if (!wallet.Save(walletPath)) {
-            std::cerr << "Failed to save wallet to " << walletPath << std::endl;
-            return 1;
-        }
+        const EphemeralWallet sender = createWallet();
+        const EphemeralWallet receiver = createWallet();
 
-        Wallet loaded = Wallet::Load(walletPath, password);
-        const std::string signature = loaded.sign(payload, password);
-        const bool verified = verifySignature(payload, signature, loaded.publicKey());
+        Transaction tx{};
+        tx.senderPub = sender.publicKey;
+        tx.receiverPub = receiver.publicKey;
+        tx.amount = 42.5;
+        tx.signature = signData(tx.digest(), sender.privateKey);
 
-        std::cout << "Wallet created and saved to: " << walletPath << std::endl;
-        std::cout << "Signature verification: " << (verified ? "OK" : "FAIL") << std::endl;
+        std::cout << "TX verify (valid): " << (tx.verify() ? "OK" : "REJECTED") << std::endl;
+
+        Transaction tampered = tx;
+        tampered.amount += 10.0;
+        std::cout << "TX verify (tampered): " << (tampered.verify() ? "OK" : "REJECTED") << std::endl;
     } catch (const std::exception& ex) {
-        std::cerr << "Wallet test failed: " << ex.what() << std::endl;
+        std::cerr << "Transaction test failed: " << ex.what() << std::endl;
         return 1;
     }
 
