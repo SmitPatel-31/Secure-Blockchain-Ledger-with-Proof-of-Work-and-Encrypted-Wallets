@@ -12,6 +12,8 @@ add_executable(secure-blockchain
     src/main.cpp
     src/crypto_utils.cpp
     src/transaction.cpp
+    src/block.cpp
+    src/blockchain.cpp
 
 )
 
