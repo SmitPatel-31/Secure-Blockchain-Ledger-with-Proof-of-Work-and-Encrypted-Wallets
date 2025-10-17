@@ -19,7 +19,8 @@ Secure-Blockchain-Ledger-with-Proof-of-Work-and-Encrypted-Wallets is a C++17 ref
 The application models a simplified blockchain suitable for learning and experimentation. Each block links to its predecessor via a SHA-256 hash and is mined by searching for a nonce that produces a hash with a given number of leading zeros. Transactions are signed with RSA key pairs and verified during validation to protect the chain from tampering.
 
 A lightweight CLI binary, `secure-blockchain`, allows you to:
-- Generate wallets (public / private RSA keys)
+- Create encrypted wallets (public / private RSA keys stored with AES-256-CBC)
+- Load previously saved wallets into the current session
 - Create signed transactions between wallets
 - Mine pending transactions into new blocks using proof-of-work
 - Persist and reload the chain from `data/chain.json`
@@ -74,11 +75,12 @@ On first launch, a new chain is created at the configured difficulty. Subsequent
 ## CLI Walkthrough
 The CLI prints a menu each loop iteration. The most common workflow is:
 
-1. **Create wallet** — Generates a fresh RSA key pair. The private key only lives in memory for the current session in the CLI.
-2. **Make transaction** — Choose a sender wallet, receiver wallet, and amount. Transactions are signed with the sender’s private key and added to the mempool.
-3. **Mine block** — Select a miner wallet to receive the block reward (reward logic can be added). Mining consumes the mempool and persists the block once proof-of-work is satisfied.
-4. **Print chain** — View block indices, hash previews, and transaction counts.
-5. **Validate chain** — Re-run integrity checks: hash linkage, difficulty rule, and signature verification.
+1. **Create wallet** — Generates a fresh RSA key pair, encrypts the private key with the password you supply, and saves it (default `data/wallets/<label>.wallet`).
+2. **Load wallet** — Imports an existing encrypted wallet file back into the session after you provide the correct password.
+3. **Make transaction** — Choose a sender wallet, receiver wallet, and amount. Transactions are signed with the sender’s private key (prompted password) and added to the mempool.
+4. **Mine block** — Select a miner wallet to receive the block reward (reward logic can be added). Mining consumes the mempool and persists the block once proof-of-work is satisfied.
+5. **Print chain** — View block indices, hash previews, and transaction counts.
+6. **Validate chain** — Re-run integrity checks: hash linkage, difficulty rule, and signature verification.
 
 Enter `0` to exit. The application attempts to save the chain on every mutation and before shutdown; failures are reported in the console.
 
@@ -89,6 +91,7 @@ Enter `0` to exit. The application attempts to save the chain on every mutation 
 
 ## Data & Persistence
 - Ledger state is persisted as JSON in `data/chain.json`.
+- Encrypted wallet files are stored wherever you choose (default `data/wallets/`). Each file contains a base64-encoded record of the encrypted private key alongside the public key, salt, and IV.
 - Each block stores index, previous hash, timestamp, nonce, hash, and an array of serialized transactions.
 - Pending (unmined) transactions remain in the `mempool` section until mined.
 - The blockchain automatically creates the `data/` directory if it does not exist.
@@ -96,7 +99,7 @@ Enter `0` to exit. The application attempts to save the chain on every mutation 
 To reset the ledger, delete `data/chain.json` before launching the CLI (or keep backups for experimentation).
 
 ## Encrypted Wallet API
-While the CLI keeps private keys in-memory for simplicity, `src/wallet.h` offers password-protected wallet files:
+The CLI uses the encrypted wallet API exposed in `src/wallet.h`, and you can also work with it directly from your own code:
 
 ```cpp
 #include "wallet.h"
@@ -115,7 +118,7 @@ Under the hood:
 - Keys are derived via PBKDF2 (100,000 iterations, 128-bit salt).
 - Files are base64-encoded `key=value` pairs for interoperability.
 
-You can integrate this API into the CLI or other tools to persist wallets securely between sessions.
+Use this API from custom tooling or scripts to create/load wallets outside the bundled CLI.
 
 ## Extending the Project
 Consider experimenting with:
